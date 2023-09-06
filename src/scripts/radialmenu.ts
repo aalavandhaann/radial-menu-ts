@@ -11,11 +11,13 @@ export const EVENT_RADIAL_ITEM_CLICK: string = 'RADIAL_ITEM_CLICK_EVENT';
 export class RadialMenuEvent {
     protected _type: string;
     protected _target: any;
+    protected _item: IRadialMenuItem;
     protected _index: number;
 
-    constructor(type: string, target: any, index: number) {
+    constructor(type: string, target: any, item: IRadialMenuItem, index: number) {
         this._type = type;
         this._target = target;
+        this._item = item;
         this._index = index;
     }
 
@@ -29,6 +31,10 @@ export class RadialMenuEvent {
 
     public set target(tgt: any) {
         this._target = tgt;
+    }
+
+    public get item(): IRadialMenuItem{
+        return this._item;
     }
 
     public get index(): number {
@@ -255,7 +261,7 @@ export class RadialMenu extends EventDispatcher {
 
     protected _setClassAndWaitForTransition(node: SVGSVGElement, newClass: string): Promise<unknown> {
         let promiseResolve: any;
-
+        
         function handler(evt: any) {
             if (evt.target == node && evt.propertyName == 'visibility') {
                 node.removeEventListener('transitionend', handler);
@@ -331,7 +337,7 @@ export class RadialMenu extends EventDispatcher {
                     this._close();
                 }
             }
-            this.dispatchEvent(new RadialMenuEvent(EVENT_RADIAL_ITEM_CLICK, item, selectedIndex));
+            this.dispatchEvent(new RadialMenuEvent(EVENT_RADIAL_ITEM_CLICK, this, item, selectedIndex));
         }
     };
 
@@ -508,7 +514,10 @@ export class RadialMenu extends EventDispatcher {
         path.setAttribute('d', this._createSectorCmds(startAngle, endAngle));
         g.setAttribute('transform', `translate(${translate.x}, ${translate.y}) scale(${this._scale})`);
         
-        svg.appendChild(g);
+        if(item){
+            svg.appendChild(g);            
+        }
+        // svg.appendChild(g);
     }
 
     protected _createMenu(classValue: string, levelItems: IRadialMenuItem[], nested?: boolean): SVGSVGElement {
@@ -547,14 +556,13 @@ export class RadialMenu extends EventDispatcher {
         }
 
         if (nested) {
-            this._createCenter(svg, 'Close', '#return', 8);
+            this._createCenter(svg, null, '#return', 8);
         } else {
-            this._createCenter(svg, 'Close', '#close', 7);
+            this._createCenter(svg, null, '#close', 7);
         }
 
         svg.addEventListener('pointerdown', (evt: PointerEvent) => {
             parentNode = ((evt.target as SVGElement).parentNode as SVGElement) || null;
-            console.log('pointer down ', parentNode);
             if (parentNode && parentNode.classList.contains('sector')) {
                 itemIndex = parseInt(parentNode.getAttribute('data-index') || '!@#!@');
                 if (!isNaN(itemIndex)) {
@@ -565,7 +573,6 @@ export class RadialMenu extends EventDispatcher {
 
         svg.addEventListener('click', (evt: MouseEvent) => {
             parentNode = ((evt.target as SVGElement).parentNode as SVGElement) || null;
-            console.log('click ', parentNode);
             if (parentNode) {
                 if (parentNode.classList.contains('sector')) {
                     this._handleClick();
