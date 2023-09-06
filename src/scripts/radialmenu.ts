@@ -7,14 +7,17 @@ export const DEFAULT_SIZE: number = 100;
 export const DEFAULT_RADIUS: number = 50;
 export const MINIMUM_SECTORS: number = 6;
 export const EVENT_RADIAL_ITEM_CLICK: string = 'RADIAL_ITEM_CLICK_EVENT';
+export const EVENT_RADIAL_MENU_CLOSE: string = 'RADIAL_MENU_CLOSE_EVENT';
+export const EVENT_RADIAL_MENU_OPEN: string = 'RADIAL_MENU_OPEN_EVENT';
+export const EVENT_RADIAL_MENU_RETURN: string = 'RADIAL_MENU_RETURN_EVENT';
 
 export class RadialMenuEvent {
     protected _type: string;
     protected _target: any;
-    protected _item: IRadialMenuItem;
+    protected _item: IRadialMenuItem | null;
     protected _index: number;
 
-    constructor(type: string, target: any, item: IRadialMenuItem, index: number) {
+    constructor(type: string, target: any, item: IRadialMenuItem | null, index: number) {
         this._type = type;
         this._target = target;
         this._item = item;
@@ -33,7 +36,7 @@ export class RadialMenuEvent {
         this._target = tgt;
     }
 
-    public get item(): IRadialMenuItem{
+    public get item(): IRadialMenuItem | null{
         return this._item;
     }
 
@@ -247,7 +250,7 @@ export class RadialMenu extends EventDispatcher {
                 }
                 this._currentMenu = null;
             });
-        }
+        }        
     };
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -345,8 +348,10 @@ export class RadialMenu extends EventDispatcher {
     protected _handleCenterClick(): void {
         if (this._parentItems.length > 0) {
             this._returnToParentMenu();
+            this.dispatchEvent(new RadialMenuEvent(EVENT_RADIAL_MENU_RETURN, this, null, -1));
         } else {
             this._close();
+            this.dispatchEvent(new RadialMenuEvent(EVENT_RADIAL_MENU_CLOSE, this, null, -1));
         }
     };
 
@@ -363,7 +368,7 @@ export class RadialMenu extends EventDispatcher {
         text.setAttribute('text-anchor', 'middle');
         text.setAttribute('x', `${location.x}`);
         text.setAttribute('y', `${location.y}`);
-        text.setAttribute('font-size', '38%');
+        text.setAttribute('font-size', '15%');
         text.innerHTML = title;
         return text;
     }
@@ -426,6 +431,9 @@ export class RadialMenu extends EventDispatcher {
         holder.className = 'menuHolder';
         holder.style.width = `${this._size}px`;
         holder.style.height = `${this._size}px`;
+        holder.style.top = `${-this._size*0.5}px`;
+        holder.style.left = `${-this._size*0.5}px`;
+        holder.style.position = 'absolute';
         return holder;
     }
 
@@ -565,6 +573,7 @@ export class RadialMenu extends EventDispatcher {
             parentNode = ((evt.target as SVGElement).parentNode as SVGElement) || null;
             if (parentNode && parentNode.classList.contains('sector')) {
                 itemIndex = parseInt(parentNode.getAttribute('data-index') || '!@#!@');
+                evt.stopImmediatePropagation();
                 if (!isNaN(itemIndex)) {
                     this._setSelectedIndex(itemIndex);
                 }
@@ -575,6 +584,7 @@ export class RadialMenu extends EventDispatcher {
             parentNode = ((evt.target as SVGElement).parentNode as SVGElement) || null;
             if (parentNode) {
                 if (parentNode.classList.contains('sector')) {
+                    evt.stopImmediatePropagation();
                     this._handleClick();
                 }
                 else if (parentNode.classList.contains('center')) {
@@ -635,6 +645,7 @@ export class RadialMenu extends EventDispatcher {
                     this._currentMenu.setAttribute('class', 'menu');
                 }
             });
+            this.dispatchEvent(new RadialMenuEvent(EVENT_RADIAL_MENU_OPEN, this, null, -1));
         }
     }
 
